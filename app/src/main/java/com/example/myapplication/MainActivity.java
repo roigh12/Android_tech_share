@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView pointer;
     private ImageView toggle;
     private static final int REQUEST_CODE_ADD_FILE = 1000;
+    private static final int REQUEST_CODE_EDIT_FILE = 2000;
 
 
     private final String TAG = "Naver";
@@ -58,9 +59,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void print() {
+        Log.d(TAG, "file리스트 시작");
         for(File temp : getFilesDir().listFiles()) {
             Log.d(TAG, temp.getName());
         }
+        Log.d(TAG, "file리스트 끝");
     }
 
 
@@ -78,8 +81,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // 해당 파일 명으로 읽어옴
-    public void readTextFile(String fileName) {
+    // 해당 파일 명으로 읽어와서 반
+    public String readTextFile(String fileName) {
         try {
             //파일 객체 생성
             File file = new File(here + "/" + fileName);
@@ -90,13 +93,14 @@ public class MainActivity extends AppCompatActivity {
             while ((cur = file_reader.read()) != -1) {
                 tt += (char) cur;
             }
-            Log.d(TAG, tt);
             file_reader.close();
+            return tt;
         } catch (FileNotFoundException e) {
             e.getStackTrace();
         } catch (IOException e) {
             e.getStackTrace();
         }
+        return "";
     }
 
 
@@ -134,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, EditTextActivity.class);
+                intent.putExtra("from", "file_add");
                 startActivityForResult(intent, REQUEST_CODE_ADD_FILE);
             }
         });
@@ -171,10 +176,14 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+    // 파일 클릭하면
     private RecyclerAdapter.OnItemClickListener itemClickListener
             = new RecyclerAdapter.OnItemClickListener() {
         @Override
         public void onItemClick(File data) {
+
+            // 폴더 클릭했을 때
             if(data.isDirectory() && data.listFiles() != null) {
                 File[] files = data.listFiles();
                 here = data;
@@ -183,21 +192,37 @@ public class MainActivity extends AppCompatActivity {
 
                 mAdapter.setDataList(files);
             }
+            // 파일 클릭했을 때
+            else{
+                // 파일 내용 읽어서 intent에 실어서 editActivity에 보낸다.
+                Intent intent = new Intent(MainActivity.this, EditTextActivity.class);
+                intent.putExtra("from", "file_edit");
+                String Name = data.getName();
+                String Content = readTextFile(Name);
+                intent.putExtra("file_name", Name);
+                intent.putExtra("file_content", Content);
+                startActivityForResult(intent, REQUEST_CODE_EDIT_FILE);
+
+            }
         }
     };
 
     @Override
     public void onBackPressed() { goBack(); }
 
+    // 액티비티에서 데이터 받아옴.
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode == REQUEST_CODE_ADD_FILE && resultCode == RESULT_OK) {
-            String fileName = data.getStringExtra("Name");
-            String fileContent = data.getStringExtra("Content");
-            makeTextFile(fileName, fileContent);
-            setRecyclerData(getFilesDir().getAbsolutePath());
+        if(requestCode == REQUEST_CODE_ADD_FILE || requestCode == REQUEST_CODE_EDIT_FILE) {
+            if(resultCode == RESULT_OK) {
+                String fileName = data.getStringExtra("Name");
+                String fileContent = data.getStringExtra("Content");
+                makeTextFile(fileName, fileContent);
+                setRecyclerData(getFilesDir().getAbsolutePath());
+
+            }
         }
 
     }
