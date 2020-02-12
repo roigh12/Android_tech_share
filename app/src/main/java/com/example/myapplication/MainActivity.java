@@ -222,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
                 makeTextFile(fileName, fileContent);
                 setRecyclerData(getFilesDir().getAbsolutePath());
 
+
             }
         }
 
