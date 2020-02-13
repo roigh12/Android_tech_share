@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<AbsViewHolder> {
-    private File[] mDataset;
+    public File[] mDataset;
     private int layoutType = ItemType.LAYOUT_LINEAR;
 
     public void setLayoutType(int layoutType) {
@@ -35,10 +35,10 @@ public class RecyclerAdapter extends RecyclerView.Adapter<AbsViewHolder> {
         }
     }
 
-    private static final int POSITION_TAG = 0xFFFFFFF1;
+    public static final int POSITION_TAG = 0xFFFFFFF1;
 
     public interface OnItemClickListener {
-        public void onItemClick(File data);
+        public void onItemClick(View v);
     }
 
     private OnItemClickListener listener;
@@ -52,10 +52,12 @@ public class RecyclerAdapter extends RecyclerView.Adapter<AbsViewHolder> {
         holder.setData(mDataset[position]);
 
         holder.view.setTag(POSITION_TAG, position);
+        ((MainActivity) MainActivity.mcontext).registerForContextMenu(holder.view);
+
         holder.view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                listener.onItemClick(mDataset[(int)v.getTag(POSITION_TAG)]);
+                listener.onItemClick(v);
             }
         });
     }

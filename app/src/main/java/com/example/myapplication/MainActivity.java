@@ -1,14 +1,19 @@
 package com.example.myapplication;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -23,6 +28,7 @@ import java.io.OutputStream;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static Context mcontext;
     private RecyclerView recyclerView;
     private RecyclerAdapter mAdapter;
     private RecyclerView.LayoutManager linearLayoutManager, gridLayoutManager, layoutManager;
@@ -31,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView toggle;
     private static final int REQUEST_CODE_ADD_FILE = 1000;
     private static final int REQUEST_CODE_EDIT_FILE = 2000;
+    public int position;
 
 
     private final String TAG = "Naver";
@@ -40,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mcontext = this;
         // FIle[]을 통으로 넘겨주는게 좋다.
         // 처리하여 제한된 정보만 넘겨주는 것보단
 
@@ -51,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
         String rootPath = getFilesDir().getAbsolutePath();
         print();
+
 
         setRecyclerData(getFilesDir().getAbsolutePath());
 //      setRecyclerData(Environment.getRootDirectory().toString());
@@ -174,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
         mAdapter.setDataList(files);
         mAdapter.setOnItemClickListener(itemClickListener);
 
+
     }
 
 
@@ -181,8 +191,11 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerAdapter.OnItemClickListener itemClickListener
             = new RecyclerAdapter.OnItemClickListener() {
         @Override
-        public void onItemClick(File data) {
+        public void onItemClick(View view) {
+            File data = mAdapter.mDataset[(int) view.getTag(mAdapter.POSITION_TAG)];
 
+            // ContextMenu 등록하기 (view 받아와서 처리)
+            //registerForContextMenu(view);
             // 폴더 클릭했을 때
             if(data.isDirectory() && data.listFiles() != null) {
                 File[] files = data.listFiles();
@@ -208,6 +221,65 @@ public class MainActivity extends AppCompatActivity {
     };
 
     @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.context_menu, menu);
+        position = (int) v.getTag(mAdapter.POSITION_TAG);
+    }
+
+    @Override
+    public boolean onContextItemSelected(@NonNull MenuItem item) {
+
+        String a = mAdapter.mDataset[position].getAbsolutePath();
+        int b = position;
+        String c = String.valueOf(position);
+        switch (item.getItemId()) {
+            case R.id.delete:
+                setDirEmpty(a);
+                mAdapter.setDataList(here.listFiles());
+                Toast.makeText(MainActivity.this, c, Toast.LENGTH_SHORT).show();
+                break;
+
+
+        }
+
+        return super.onContextItemSelected(item);
+    }
+
+    // 해당 디렉토리 통째로 비우기
+    public void setDirEmpty(String dirPath){
+        Log.d(TAG, "오");
+        String path = dirPath;
+
+        File dir = new File(path);
+
+        if(dir.exists()){
+            // 폴더일 때
+            if(dir.isDirectory() && dir.listFiles() != null){
+                File[] childFileList = dir.listFiles();
+
+
+                for (File childFile : childFileList) {
+                    if (childFile.isDirectory()) {
+                        setDirEmpty(childFile.getAbsolutePath());    //하위 디렉토리
+                    } else {
+                        childFile.delete();    //하위 파일
+                    }
+                }
+                dir.delete();
+            }
+            // 파일일 때
+            else{
+                dir.delete();
+            }
+        }
+
+
+
+    }
+
+    @Override
     public void onBackPressed() { goBack(); }
 
     // 액티비티에서 데이터 받아옴.
@@ -220,12 +292,17 @@ public class MainActivity extends AppCompatActivity {
                 String fileName = data.getStringExtra("Name");
                 String fileContent = data.getStringExtra("Content");
                 makeTextFile(fileName, fileContent);
-                setRecyclerData(getFilesDir().getAbsolutePath());
+                mAdapter.setDataList(here.listFiles());
 
 
             }
         }
 
     }
+
+
+
+    //
+
 
 }
